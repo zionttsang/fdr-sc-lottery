@@ -2,6 +2,7 @@
 pragma solidity ^0.8.18;
 
 import {VRFCoordinatorV2Interface} from "@chainlink/contracts/src/v0.8/interfaces/VRFCoordinatorV2Interface.sol";
+import {VRFConsumerBaseV2} from "@chainlink/contracts/src/v0.8/VRFConsumerBaseV2.sol";
 
 /**
  * @title simple raffle.
@@ -9,8 +10,16 @@ import {VRFCoordinatorV2Interface} from "@chainlink/contracts/src/v0.8/interface
  * @notice this is for creatin a simple raffle smart contract.
  * @dev Implement Chainlink VRFv2
  */
-contract Raffle {
+contract Raffle is VRFConsumerBaseV2 {
     error Raffle__NotEnoughETHSent();
+    error Raffle__FailedToSendBalanceToWinner();
+    error Raffle__NotOpen();
+
+    // enum for storage different states of the contract;
+    enum RaffleState {
+        OPEN,
+        CALCULATING
+    }
 
     uint16 private constant REQUEST_CONFIRMATION = 3;
     uint32 private constant NUM_WORDS = 3;
@@ -29,8 +38,15 @@ contract Raffle {
     // add a payable array for storafe joiners. must payable if want to pay the winner in the end.
     address payable[] private s_listOfPlayers;
 
-    // build a event. more gas saving.
-    event EnterRaffle(address sender);
+    // set a record for last winner; maybe it's not necessary;
+    address private s_lastWinner;
+
+    // state control;
+    RaffleState private s_raffleState;
+
+    // build a event. for add logs for Contract; more gas saving then storage;
+    event EnterRaffle(address indexed player);
+    event PickedWinner(address indexed winner);
 
     constructor(
         uint256 _entranceFee,
@@ -39,7 +55,7 @@ contract Raffle {
         bytes32 _gasLane,
         uint64 _subscriptionId,
         uint32 _callbackGasLimit
-    ) {
+    ) VRFConsumerBaseV2(_vrfCoordinator) {
         i_entranceFee = _entranceFee;
         i_interval = _interval;
         s_lastTimestamp = block.timestamp;
@@ -47,6 +63,7 @@ contract Raffle {
         i_gasLane = _gasLane;
         i_subscriptionId = _subscriptionId;
         i_callbackGasLimit = _callbackGasLimit;
+        s_raffleState = RaffleState.OPEN;
     }
 
     //set a ticket price for user enter threshold .
@@ -55,6 +72,11 @@ contract Raffle {
         // change to use revert error since it's more gas saving.
         if (msg.value < i_entranceFee) {
             revert Raffle__NotEnoughETHSent();
+        }
+
+        // check if Raffle opened
+        if (s_raffleState != RaffleState.OPEN) {
+            revert Raffle__NotOpen();
         }
 
         s_listOfPlayers.push(payable(msg.sender));
@@ -67,6 +89,9 @@ contract Raffle {
             revert();
         }
 
+        // while picking, Raffle should be in CALCULATING state;
+        s_raffleState = RaffleState.CALCULATING;
+
         uint256 requestId = i_vrfCoordinator.requestRandomWords(
             i_gasLane, //gas line.
             i_subscriptionId,
@@ -74,6 +99,33 @@ contract Raffle {
             i_callbackGasLimit,
             NUM_WORDS
         );
+    }
+
+    // get radom num back from Chainlink;
+    // The second input param is the feedback rdm num from Chainlink;
+    function fulfillRandomWords(
+        uint256 _requestId,
+        uint256[] memory _randomWords
+    ) internal override {
+        // use modulo to get index of the winner;
+        uint256 indexOfWinner = _randomWords[0] % s_listOfPlayers.length;
+        address payable winner = s_listOfPlayers[indexOfWinner];
+        s_lastWinner = winner;
+        // send the money to winner;
+        (bool success, ) = winner.call{value: address(this).balance}("");
+        if (!success) {
+            // if award failed, have some error handling;
+            revert Raffle__FailedToSendBalanceToWinner();
+        }
+
+        // after send reward, this round of Raffle is finished; change to open state;
+        // meanwhile set all the other vars as what it should be;
+        s_raffleState = RaffleState.OPEN;
+        s_lastTimestamp = block.timestamp;
+        s_listOfPlayers = new address payable[](0);
+
+        // log it;
+        emit PickedWinner(winner);
     }
 
     function getEntranceFee() external view returns (uint256) {

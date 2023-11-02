@@ -14,6 +14,7 @@ contract Raffle is VRFConsumerBaseV2 {
     error Raffle__NotEnoughETHSent();
     error Raffle__FailedToSendBalanceToWinner();
     error Raffle__NotOpen();
+    error Raffle__UpkeepNotSatisfied();
 
     // enum for storage different states of the contract;
     enum RaffleState {
@@ -83,16 +84,40 @@ contract Raffle is VRFConsumerBaseV2 {
         emit EnterRaffle(msg.sender);
     }
 
-    function pickWinner() external {
-        // compare the time see if the time interval is met.
-        if ((block.timestamp - s_lastTimestamp) < i_interval) {
-            revert();
-        }
+    // check if meet the Raffle start status with Upkeep;
+    function checkUpkeep(
+        bytes memory /*checkData*/
+    )
+        public
+        view
+        returns (bool bl_upKeepSatisfied, bytes memory /*performData*/)
+    {
+        bool bl_timeSatisfied = block.timestamp - s_lastTimestamp > i_interval;
+        bool bl_isOpenStatus = s_raffleState == RaffleState.OPEN;
+        bool bl_ethSatisfied = address(this).balance > 0;
+        bool bl_hasPlayer = s_listOfPlayers.length > 0;
+        bl_upKeepSatisfied = (bl_timeSatisfied &&
+            bl_ethSatisfied &&
+            bl_isOpenStatus &&
+            bl_hasPlayer);
 
+        return (bl_upKeepSatisfied, "0x0");
+    }
+
+    // function pickWinner() external {
+    function performUpkeep(bytes calldata /* performData */) external {
+        // // compare the time see if the time interval is met.
+        // if ((block.timestamp - s_lastTimestamp) < i_interval) {
+        //     revert();
+        // }
+        (bool bl_upkeep, ) = checkUpkeep("");
+        if (!bl_upkeep) {
+            revert Raffle__UpkeepNotSatisfied();
+        }
         // while picking, Raffle should be in CALCULATING state;
         s_raffleState = RaffleState.CALCULATING;
 
-        uint256 requestId = i_vrfCoordinator.requestRandomWords(
+        i_vrfCoordinator.requestRandomWords(
             i_gasLane, //gas line.
             i_subscriptionId,
             REQUEST_CONFIRMATION, // number of confirmations;
@@ -104,7 +129,7 @@ contract Raffle is VRFConsumerBaseV2 {
     // get radom num back from Chainlink;
     // The second input param is the feedback rdm num from Chainlink;
     function fulfillRandomWords(
-        uint256 _requestId,
+        uint256 /*_requestId*/,
         uint256[] memory _randomWords
     ) internal override {
         // use modulo to get index of the winner;

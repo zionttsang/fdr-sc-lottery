@@ -13,7 +13,7 @@ contract DeployRaffle is Script {
 
         // get config decoded version;
         (
-            uint256 entranceFee,
+            uint256 raffleEntranceFee,
             uint256 intervale,
             address vrfCoordinatore,
             bytes32 gasLanee,
@@ -23,7 +23,7 @@ contract DeployRaffle is Script {
 
         vm.startBroadcast();
         Raffle raffle = new Raffle(
-            entranceFee,
+            raffleEntranceFee,
             intervale,
             vrfCoordinatore,
             gasLanee,

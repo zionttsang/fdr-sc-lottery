@@ -3,6 +3,7 @@ pragma solidity ^0.8.18;
 
 import {VRFCoordinatorV2Interface} from "@chainlink/contracts/src/v0.8/interfaces/VRFCoordinatorV2Interface.sol";
 import {VRFConsumerBaseV2} from "@chainlink/contracts/src/v0.8/VRFConsumerBaseV2.sol";
+import {console} from "forge-std/Test.sol";
 
 /**
  * @title simple raffle.
@@ -68,10 +69,16 @@ contract Raffle is VRFConsumerBaseV2 {
     }
 
     //set a ticket price for user enter threshold .
-    function enterRaffle() external payable {
+    function enterRaffle() public payable {
         //  require(msg.value>= i_entranceFee, 'Not enough ETH entrance fee sent.');
         // change to use revert error since it's more gas saving.
         if (msg.value < i_entranceFee) {
+            console.log(
+                "value / entrance fee: ",
+                uint256(msg.value),
+                " / ",
+                uint256(i_entranceFee)
+            );
             revert Raffle__NotEnoughETHSent();
         }
 
@@ -159,5 +166,9 @@ contract Raffle is VRFConsumerBaseV2 {
 
     function getRaffleState() external view returns (RaffleState) {
         return s_raffleState;
+    }
+
+    function getPlayer(uint256 indexOfPlayer) external view returns (address) {
+        return s_listOfPlayers[indexOfPlayer];
     }
 }

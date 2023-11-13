@@ -74,13 +74,20 @@ contract Raffle is VRFConsumerBaseV2 {
         // change to use revert error since it's more gas saving.
         if (msg.value < i_entranceFee) {
             console.log(
-                "In enterRaffle; value / entrance fee: ",
+                "In enterRaffle revert condition; value / entrance fee: ",
                 uint256(msg.value),
                 " / ",
                 uint256(i_entranceFee)
             );
             revert Raffle__NotEnoughETHSent();
         }
+
+        console.log(
+            "In enterRaffle pass fee check condition; value / enteraceFee: ",
+            uint256(msg.value),
+            " / ",
+            uint256(i_entranceFee)
+        );
 
         // check if Raffle opened
         if (s_raffleState != RaffleState.OPEN) {

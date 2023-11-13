@@ -63,6 +63,7 @@ contract RaffleTest is Test {
         raffle.enterRaffle{value: raffleEntranceFee}();
         // Assert
         address playerRecorded = raffle.getPlayer(0);
+        console.log("PLAYER address: ", playerRecorded);
         assert(playerRecorded == PLAYER);
 
         /**

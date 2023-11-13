@@ -64,5 +64,11 @@ contract RaffleTest is Test {
         // Assert
         address playerRecorded = raffle.getPlayer(0);
         assert(playerRecorded == PLAYER);
+
+        /**
+         * 在Solidity编程语言中，raffle.enterRaffle{value: raffleEntranceFee}(); 这行代码表示一个合约函数调用，并且在调用合约函数时发送了一些以太币。这在调用需要支付以太币（ETH）的函数时非常常见。
+         * value: raffleEntranceFee 是一个特殊的参数，它表示了发送给被调用函数的以太币的数量。其中，value 是Solidity语言中用于指定发送量的预留关键字，raffleEntranceFee 可以看做一个变量名，它的意思就是进入抽奖的费用。
+         * 所以，这行代码的意思就是调用 raffle 合约的 enterRaffle 函数，并且在调用时付了等于 raffleEntranceFee 的以太币。
+         */
     }
 }

@@ -32,7 +32,7 @@ contract DeployRaffle is Script {
             callbackGasLimit
         );
         vm.stopBroadcast();
-        console.log("in DeployRaffle; entranceFee:", raffleEntranceFee);
+        // console.log("in DeployRaffle; entranceFee:", raffleEntranceFee);
         return (raffle, helperConfig);
     }
 }

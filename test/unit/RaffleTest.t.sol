@@ -13,25 +13,27 @@ contract RaffleTest is Test {
 
     uint64 subscriptionId;
     bytes32 gasLane;
-    uint256 automationUpdateInterval;
+    uint256 interval;
     uint256 raffleEntranceFee;
     uint32 callbackGasLimit;
     address vrfCoordinatorV2;
 
     address public PLAYER = makeAddr("player");
-    uint256 public constant INIT_BLC = 10 ether;
+    uint256 public constant INIT_BLC = 30 ether;
 
     function setUp() external {
         DeployRaffle dpler = new DeployRaffle();
         (raffle, helperConfig) = dpler.run();
         vm.deal(PLAYER, INIT_BLC);
+        // console.log(PLAYER.balance);
+
         (
-            uint256 raffleEntranceFee,
-            uint256 intervale,
-            address vrfCoordinatore,
-            bytes32 gasLanee,
-            uint64 subscriptionIde,
-            uint32 callbackGasLimit
+            raffleEntranceFee,
+            interval,
+            vrfCoordinatorV2,
+            gasLane,
+            subscriptionId,
+            callbackGasLimit
         ) = helperConfig.activeNetworkConfig();
     }
 
@@ -52,6 +54,12 @@ contract RaffleTest is Test {
         // Arrange
         vm.prank(PLAYER);
         // Act
+        console.log(
+            "In test; value / fee  ",
+            PLAYER.balance,
+            "/",
+            raffleEntranceFee
+        );
         raffle.enterRaffle{value: raffleEntranceFee}();
         // Assert
         address playerRecorded = raffle.getPlayer(0);

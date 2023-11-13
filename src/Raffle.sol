@@ -74,7 +74,7 @@ contract Raffle is VRFConsumerBaseV2 {
         // change to use revert error since it's more gas saving.
         if (msg.value < i_entranceFee) {
             console.log(
-                "value / entrance fee: ",
+                "In enterRaffle; value / entrance fee: ",
                 uint256(msg.value),
                 " / ",
                 uint256(i_entranceFee)

@@ -8,6 +8,10 @@ import {HelperConfig} from "../../script/HelperConfig.s.sol";
 import {Vm} from "forge-std/Vm.sol";
 
 contract RaffleTest is Test {
+    /*Event
+     */
+    event EnterRaffle(address indexed player);
+
     Raffle public raffle;
     HelperConfig public helperConfig;
 
@@ -71,5 +75,24 @@ contract RaffleTest is Test {
          * value: raffleEntranceFee 是一个特殊的参数，它表示了发送给被调用函数的以太币的数量。其中，value 是Solidity语言中用于指定发送量的预留关键字，raffleEntranceFee 可以看做一个变量名，它的意思就是进入抽奖的费用。
          * 所以，这行代码的意思就是调用 raffle 合约的 enterRaffle 函数，并且在调用时付了等于 raffleEntranceFee 的以太币。
          */
+    }
+
+    function testEmitsEventOnEntrance() public {
+        vm.prank(PLAYER);
+        vm.expectEmit(true, false, false, false, address(raffle));
+        emit EnterRaffle(PLAYER);
+        raffle.enterRaffle{value: raffleEntranceFee}();
+    }
+
+    function testCantEnterWhenRaffleIsCalculating() public {
+        vm.prank(PLAYER);
+        raffle.enterRaffle{value: raffleEntranceFee}();
+        vm.warp(block.timestamp + interval + 1);
+        vm.roll(block.number + 1);
+        raffle.performUpkeep("");
+
+        vm.expectRevert(Raffle.Raffle__NotOpen.selector);
+        vm.prank(PLAYER);
+        raffle.enterRaffle{value: raffleEntranceFee}();
     }
 }
